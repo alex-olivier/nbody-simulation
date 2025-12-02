@@ -36,13 +36,16 @@ fn main() {
             Update,
             (
                 apply_reset_request,
-                camera_controls,
-                draw_quadtree_gizmos,
-                draw_trails,
-                cull_bodies,
-                update_camera_follow,
-            )
-                .chain(),
+                (
+                    camera_controls,
+                    draw_quadtree_gizmos,
+                    draw_trails,
+                    cull_bodies,
+                    update_camera_follow,
+                )
+                    .chain()
+                    .after(apply_reset_request),
+            ),
         )
         .add_systems(
             FixedUpdate,

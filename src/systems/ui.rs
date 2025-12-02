@@ -22,7 +22,7 @@ pub fn ui_controls(
             .max_size([320.0, 310.0])
             .vscroll(true)
             .show(ctx, |ui| {
-                ui.heading("Simulation");
+                ui.heading("Simulation Parameters");
                 ui.add(
                     egui::Slider::new(&mut settings.time_scale, 0.1..=5.0)
                         .text("Time Scale (Speed)"),

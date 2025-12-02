@@ -1,3 +1,4 @@
+use bevy::ecs::system::SystemParam;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::MessageReader;
 use bevy::prelude::*;
@@ -7,6 +8,17 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 use crate::components::*;
 use crate::quadtree::{NodeKind, QuadTreeResource, Rect};
 use crate::resources::*;
+
+#[derive(SystemParam)]
+pub struct ResetParams<'w, 's> {
+    pub commands: Commands<'w, 's>,
+    pub meshes: ResMut<'w, Assets<Mesh>>,
+    pub materials: ResMut<'w, Assets<ColorMaterial>>,
+    pub settings: ResMut<'w, SimSettings>,
+    pub sim_config: ResMut<'w, SimConfig>,
+    pub bounds: ResMut<'w, SimulationBounds>,
+    pub quadtree: ResMut<'w, QuadTreeResource>,
+}
 
 pub fn spawn_simulation_bodies(
     commands: &mut Commands,
@@ -293,31 +305,25 @@ pub fn draw_quadtree_gizmos(
     stack.push(root_index);
 
     while let Some(idx) = stack.pop() {
-        if let Some(node) = nodes.get(idx) {
-            if let NodeKind::Internal { children } = &node.kind {
-                if node.bounds.size.x.max(node.bounds.size.y) >= MIN_GIZMO_NODE_SIZE {
-                    gizmos.rect_2d(
-                        Isometry2d::from_translation(node.bounds.center),
-                        node.bounds.size,
-                        color,
-                    );
-                }
-                for child in children.iter().flatten() {
-                    stack.push(*child);
-                }
+        if let Some(node) = nodes.get(idx)
+            && let NodeKind::Internal { children } = &node.kind
+        {
+            if node.bounds.size.x.max(node.bounds.size.y) >= MIN_GIZMO_NODE_SIZE {
+                gizmos.rect_2d(
+                    Isometry2d::from_translation(node.bounds.center),
+                    node.bounds.size,
+                    color,
+                );
+            }
+            for child in children.iter().flatten() {
+                stack.push(*child);
             }
         }
     }
 }
 
 pub fn apply_reset_request(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut settings: ResMut<SimSettings>,
-    mut sim_config: ResMut<SimConfig>,
-    mut bounds: ResMut<SimulationBounds>,
-    mut quadtree: ResMut<QuadTreeResource>,
+    params: ResetParams,
     mut reset: ResMut<ResetSimulation>,
     query: Query<Entity, With<Mass>>,
 ) {
@@ -325,6 +331,16 @@ pub fn apply_reset_request(
         return;
     }
     reset.pending = false;
+
+    let ResetParams {
+        mut commands,
+        mut meshes,
+        mut materials,
+        mut settings,
+        mut sim_config,
+        mut bounds,
+        mut quadtree,
+    } = params;
 
     *settings = SimSettings::default();
     *sim_config = SimConfig::default();

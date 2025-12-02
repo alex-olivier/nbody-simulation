@@ -148,11 +148,11 @@ impl QuadTreeResource {
     }
 
     fn subdivide(&mut self, index: usize, children: &mut [Option<usize>; 4]) {
-        for quadrant in 0..4 {
+        for (quadrant, child) in children.iter_mut().enumerate() {
             let child_bounds = self.nodes[index].bounds.sub_quadrant(quadrant);
             let child_index = self.nodes.len();
             self.nodes.push(Node::empty(child_bounds));
-            children[quadrant] = Some(child_index);
+            *child = Some(child_index);
         }
     }
 
