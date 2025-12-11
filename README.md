@@ -63,7 +63,20 @@ When running use the additional flag:
 
 ---
 
-### Use of AI
+### **Use of Resources and AI**
 
 - Implementing the Quadtree proved to be very difficult and I had to utilize Generative AI to assist with the creation of it.
 - The AI was used to help generate the initial structure and logic for the Quadtree implementation, which I then refined and integrated into the overall simulation code.
+- I referenced [The Nature of Code](https://natureofcode.com/) throughout the process to help with my understanding of the pieces required.
+
+---
+
+### **What was Learned**
+
+- Figuring out what to use for the simulation was difficult at first. I researched different libraries and tried:
+    - Nannou
+    - Macroquad
+    - Bevy (which I ultimately chose for it's performance)
+- I started off with a brute-force N-body simulation and then implemented the Barnes-Hut algorithm to optimize performance.
+    - It was difficult to jump right into using the Barnes-Hut algorithm. I had to first understand how it worked conceptually before I could implement it effectively.
+
