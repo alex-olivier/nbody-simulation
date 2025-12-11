@@ -4,6 +4,7 @@ use bevy_egui::egui;
 
 use crate::resources::{ResetSimulation, SimConfig, SimSettings};
 
+/// Draws the simulation control panel and updates settings/resources from user input.
 pub fn ui_controls(
     mut contexts: EguiContexts,
     mut settings: ResMut<SimSettings>,

@@ -1,21 +1,30 @@
 use bevy::prelude::*;
 
-// --- Simulation Defaults ---
-pub const DEFAULT_G: f32 = 100.0;
-pub const DEFAULT_THETA: f32 = 0.5;
-pub const DEFAULT_DT: f32 = 1.0 / 60.0;
-pub const SOFTENING: f32 = 5.0;
-pub const NUM_BODIES: usize = 2000;
-pub const TRAIL_LENGTH: usize = 20;
-pub const CULL_DISTANCE: f32 = 1500.0;
-pub const MIN_GIZMO_NODE_SIZE: f32 = 2.0;
-
+/// Tunable runtime simulation parameters (G, theta, timestep).
 #[derive(Resource)]
 pub struct SimConfig {
     pub g: f32,
     pub theta: f32,
     pub dt: f32,
 }
+
+// --- Simulation Defaults ---
+/// Default gravitational constant.
+pub const DEFAULT_G: f32 = 100.0;
+/// Default Barnes-Hut theta threshold.
+pub const DEFAULT_THETA: f32 = 0.5;
+/// Default fixed timestep for physics.
+pub const DEFAULT_DT: f32 = 1.0 / 60.0;
+/// Distance softening to prevent singularities.
+pub const SOFTENING: f32 = 5.0;
+/// Number of dynamic bodies spawned at reset.
+pub const NUM_BODIES: usize = 2000;
+/// Maximum stored points per trail.
+pub const TRAIL_LENGTH: usize = 20;
+/// Distance from origin after which culling will despawn bodies.
+pub const CULL_DISTANCE: f32 = 1500.0;
+/// Smallest quadtree node size that will be drawn as a gizmo.
+pub const MIN_GIZMO_NODE_SIZE: f32 = 2.0;
 
 impl Default for SimConfig {
     fn default() -> Self {
@@ -27,6 +36,7 @@ impl Default for SimConfig {
     }
 }
 
+/// Bounds used to initialize the quadtree root.
 #[derive(Resource, Clone, Copy)]
 pub struct SimulationBounds {
     pub root: crate::quadtree::Rect,
@@ -43,6 +53,7 @@ impl Default for SimulationBounds {
     }
 }
 
+/// User-facing toggles that drive rendering and simulation behavior.
 #[derive(Resource)]
 pub struct SimSettings {
     pub time_scale: f32,
@@ -64,6 +75,7 @@ impl Default for SimSettings {
     }
 }
 
+/// Marker resource to request a simulation reset from the UI.
 #[derive(Resource, Default)]
 pub struct ResetSimulation {
     pub pending: bool,

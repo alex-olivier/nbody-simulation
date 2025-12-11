@@ -9,6 +9,7 @@ use crate::components::*;
 use crate::quadtree::{NodeKind, QuadTreeResource, Rect};
 use crate::resources::*;
 
+/// Bundled system params used when resetting the simulation.
 #[derive(SystemParam)]
 pub struct ResetParams<'w, 's> {
     pub commands: Commands<'w, 's>,
@@ -20,6 +21,7 @@ pub struct ResetParams<'w, 's> {
     pub quadtree: ResMut<'w, QuadTreeResource>,
 }
 
+/// Spawns the initial galaxy of orbiting bodies plus a central massive body.
 pub fn spawn_simulation_bodies(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
@@ -67,6 +69,7 @@ pub fn spawn_simulation_bodies(
     ));
 }
 
+/// Sets up camera and populates the simulation with initial bodies.
 pub fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -76,6 +79,7 @@ pub fn setup_scene(
     spawn_simulation_bodies(&mut commands, &mut meshes, &mut materials);
 }
 
+/// Recomputes quadtree bounds and inserts all current bodies.
 pub fn reset_and_build_tree(
     mut quadtree: ResMut<QuadTreeResource>,
     mut bounds: ResMut<SimulationBounds>,
@@ -112,6 +116,7 @@ pub fn reset_and_build_tree(
     }
 }
 
+/// Uses the quadtree to approximate gravitational forces and updates accelerations.
 pub fn calculate_forces(
     mut query: Query<(Entity, &Position, &Mass, &mut Acceleration)>,
     quadtree: Res<QuadTreeResource>,
@@ -125,6 +130,7 @@ pub fn calculate_forces(
         });
 }
 
+/// Integrates positions and velocities with a fixed timestep scaled by user settings.
 pub fn integrate_motion(
     mut query: Query<(
         &mut Position,
@@ -145,6 +151,7 @@ pub fn integrate_motion(
     }
 }
 
+/// Draws motion trails for bodies when enabled in settings.
 pub fn draw_trails(
     mut gizmos: Gizmos,
     mut query: Query<(&Position, &mut Trail)>,
@@ -173,6 +180,7 @@ pub fn draw_trails(
     }
 }
 
+/// Despawns bodies that travel beyond the configured culling distance.
 pub fn cull_bodies(
     mut commands: Commands,
     query: Query<(Entity, &Position)>,
@@ -189,6 +197,7 @@ pub fn cull_bodies(
     }
 }
 
+/// Moves the camera toward the weighted center of mass when follow mode is enabled.
 pub fn update_camera_follow(
     mut camera_query: Query<&mut Transform, (With<Camera>, Without<Position>)>,
     body_query: Query<(&Position, &Mass)>,
@@ -219,6 +228,7 @@ pub fn update_camera_follow(
     }
 }
 
+/// Handles manual camera pan/zoom input unless blocked by UI focus.
 pub fn camera_controls(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut mouse_wheel: MessageReader<MouseWheel>,
@@ -281,6 +291,7 @@ pub fn camera_controls(
     }
 }
 
+/// Renders quadtree node bounds as rectangles when gizmo display is enabled.
 pub fn draw_quadtree_gizmos(
     mut gizmos: Gizmos,
     quadtree: Res<QuadTreeResource>,
@@ -322,6 +333,130 @@ pub fn draw_quadtree_gizmos(
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::ecs::system::SystemState;
+    use bevy::tasks::{ComputeTaskPool, TaskPoolBuilder};
+
+    fn assert_vec2_close(a: Vec2, b: Vec2, tolerance: f32) {
+        let diff = (a - b).length();
+        assert!(
+            diff <= tolerance,
+            "expected {:?} to be within {} of {:?}, diff {}",
+            a,
+            tolerance,
+            b,
+            diff
+        );
+    }
+
+    #[test]
+    fn reset_and_build_tree_updates_bounds_and_root() {
+        let mut world = World::new();
+        world.insert_resource(QuadTreeResource::default());
+        world.insert_resource(SimulationBounds::default());
+
+        let entities = [
+            (vec2(-10.0, -5.0), 2.0),
+            (vec2(20.0, 15.0), 3.0),
+        ];
+        for (pos, mass) in entities {
+            world.spawn((Position(pos), Mass(mass)));
+        }
+
+        let mut system_state: SystemState<(
+            ResMut<QuadTreeResource>,
+            ResMut<SimulationBounds>,
+            Query<(Entity, &Position, &Mass)>,
+        )> = SystemState::new(&mut world);
+
+        {
+            let (quadtree, bounds, query) = system_state.get_mut(&mut world);
+            reset_and_build_tree(quadtree, bounds, query);
+        }
+        system_state.apply(&mut world);
+
+        let quadtree = world.resource::<QuadTreeResource>();
+        let bounds = world.resource::<SimulationBounds>();
+        assert!(quadtree.root.is_some());
+        assert!(quadtree.nodes.len() >= 3);
+
+        let root_node = &quadtree.nodes[quadtree.root.unwrap()];
+        assert_vec2_close(root_node.bounds.center, vec2(5.0, 5.0), 0.0001);
+        assert!(
+            (bounds.root.size.x - 33.0).abs() < 0.0001,
+            "root size should expand to cover all bodies"
+        );
+    }
+
+    #[test]
+    fn calculate_forces_sets_acceleration_from_quadtree() {
+        let mut world = World::new();
+        ComputeTaskPool::get_or_init(|| TaskPoolBuilder::default().build());
+        let mut quadtree = QuadTreeResource::default();
+        let bounds = Rect {
+            center: Vec2::ZERO,
+            size: Vec2::splat(10.0),
+        };
+        quadtree.reset(bounds);
+
+        let entity_a = world
+            .spawn((Position(Vec2::ZERO), Mass(1.0), Acceleration(Vec2::ZERO)))
+            .id();
+        let entity_b = world
+            .spawn((Position(vec2(3.0, 0.0)), Mass(2.0), Acceleration(Vec2::ZERO)))
+            .id();
+
+        quadtree.insert(entity_a, Vec2::ZERO, 1.0);
+        quadtree.insert(entity_b, vec2(3.0, 0.0), 2.0);
+
+        world.insert_resource(quadtree);
+        world.insert_resource(SimConfig::default());
+
+        let mut system_state: SystemState<(
+            Query<(Entity, &Position, &Mass, &mut Acceleration)>,
+            Res<QuadTreeResource>,
+            Res<SimConfig>,
+        )> = SystemState::new(&mut world);
+
+        {
+            let (query, quadtree, config) = system_state.get_mut(&mut world);
+            calculate_forces(query, quadtree, config);
+        }
+        system_state.apply(&mut world);
+
+        let acc_a = world
+            .get::<Acceleration>(entity_a)
+            .expect("acceleration present for entity A")
+            .0;
+        let acc_b = world
+            .get::<Acceleration>(entity_b)
+            .expect("acceleration present for entity B")
+            .0;
+
+        // Expected accelerations derived from one other body each.
+        let expected_a_x = {
+            let delta = vec2(3.0, 0.0);
+            let dist_sq = delta.length_squared() + SOFTENING * SOFTENING;
+            let dist = dist_sq.sqrt();
+            let force_mag = (DEFAULT_G * 2.0) / dist_sq;
+            (delta / dist * force_mag).x
+        };
+        let expected_b_x = {
+            let delta = vec2(-3.0, 0.0);
+            let dist_sq = delta.length_squared() + SOFTENING * SOFTENING;
+            let dist = dist_sq.sqrt();
+            let force_mag = (DEFAULT_G * 1.0) / dist_sq;
+            (delta / dist * force_mag).x / 2.0
+        };
+
+        assert!((acc_a.x - expected_a_x).abs() < 0.0001);
+        assert!((acc_b.x - expected_b_x).abs() < 0.0001);
+    }
+}
+
+/// Responds to a pending reset: clears entities, resets resources, and respawns bodies.
 pub fn apply_reset_request(
     params: ResetParams,
     mut reset: ResMut<ResetSimulation>,

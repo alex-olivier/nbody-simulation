@@ -1,8 +1,5 @@
 # N-Body Simulation with Barnes-Hut Algorithm in Bevy
 
-I am still deciding on what to do. The repository will be renamed when I do.
-
-
 ### Information on the _Barnes-Hut Algorithm_
 
 Theta parameter :
@@ -38,8 +35,21 @@ If the ratio of "size to distance" is **less than** $\theta$, the algorithm says
 | 1.0          | Poor      | Very Fast    | Particles may behave strangely.                         |
 
 
+### Architecture Notes
+
+- `resources.rs`: simulation constants and user-adjustable settings (gravity, theta, timestep, UI toggles).
+- `components.rs`: ECS data for body state (position, velocity, acceleration, mass) and optional trails.
+- `quadtree.rs`: Barnes-Hut quadtree, insertion, and force calculation with softening.
+- `systems/core.rs`: simulation systems (spawn, quadtree rebuild, force calc, integration, trails, culling, camera follow/controls, reset handler).
+- `systems/ui.rs`: egui panel wiring to mutate settings/config and trigger resets.
+
 ---
 
+To Test:
+
+```
+cargo test --target x86_64-pc-windows-gnu
+```
 
 To run:
 
