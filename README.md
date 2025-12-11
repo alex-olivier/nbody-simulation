@@ -1,10 +1,8 @@
-# N-Body Simulation with Barnes-Hut Algorithm in Bevy
+# N-Body Simulation 
 
-### Information on the _Barnes-Hut Algorithm_
+### **Information on the _Barnes-Hut Algorithm_**
 
-Theta parameter :
-
-#### The Rule of Thumb
+#### Theta parameter
 
 - **Large $\theta$ (e.g., > 1.0):** The simulation is **Fast but Inaccurate**. It aggressively groups distant particles together, calculating forces based on large, low-resolution clusters.
 
@@ -26,7 +24,7 @@ If the ratio of "size to distance" is **less than** $\theta$, the algorithm says
 
 * If you set $\theta$ **to be small** (e.g., 0.3), it is **hard** to satisfy this condition. The algorithm is forced to dive deeper into the tree (recurse) to find smaller nodes or individual leaves.
 
-### Comparison Table
+#### Comparison Table
 
 | $\theta$     | Accuracy  | Speed (FPS)  | Behavior                                                |
 | :----------: | :-------: | :----------: | :------------------------------------------------------ |
@@ -34,8 +32,7 @@ If the ratio of "size to distance" is **less than** $\theta$, the algorithm says
 | 0.5          | Good      | Fast         | Strikes a good balance between physics and performance. |
 | 1.0          | Poor      | Very Fast    | Particles may behave strangely.                         |
 
-
-### Architecture Notes
+### **Overview of the Code Structure**
 
 - `resources.rs`: simulation constants and user-adjustable settings (gravity, theta, timestep, UI toggles).
 - `components.rs`: ECS data for body state (position, velocity, acceleration, mass) and optional trails.
