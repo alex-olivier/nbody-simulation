@@ -32,6 +32,8 @@ If the ratio of "size to distance" is **less than** $\theta$, the algorithm says
 | 0.5          | Good      | Fast         | Strikes a good balance between physics and performance. |
 | 1.0          | Poor      | Very Fast    | Particles may behave strangely.                         |
 
+---
+
 ### **Overview of the Code Structure**
 
 - `resources.rs`: simulation constants and user-adjustable settings (gravity, theta, timestep, UI toggles).
@@ -40,18 +42,28 @@ If the ratio of "size to distance" is **less than** $\theta$, the algorithm says
 - `systems/core.rs`: simulation systems (spawn, quadtree rebuild, force calc, integration, trails, culling, camera follow/controls, reset handler).
 - `systems/ui.rs`: egui panel wiring to mutate settings/config and trigger resets.
 
----
-
-To Test:
-
-```
-cargo test --target x86_64-pc-windows-gnu
-```
-
 To run:
 
 ```
-cargo run --target x86_64-pc-windows-gnu
-
-cargo run --target x86_64-pc-windows-gnu --release
+cargo run --release
 ```
+
+
+**Note:** If using WSL, you may have to use the GNU toolchain to utilzie GPU acceleration. Ensure you have the necessary build tools installed:
+
+```
+rustup target add x86_64-pc-windows-gnu
+```
+
+When running use the additional flag:
+
+```
+--target x86_64-pc-windows-gnu
+```
+
+---
+
+### Use of AI
+
+- Implementing the Quadtree proved to be very difficult and I had to utilize Generative AI to assist with the creation of it.
+- The AI was used to help generate the initial structure and logic for the Quadtree implementation, which I then refined and integrated into the overall simulation code.
