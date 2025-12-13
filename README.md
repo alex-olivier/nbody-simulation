@@ -69,6 +69,7 @@ When running use the additional flag:
 - Implementing the Quadtree proved to be very difficult and I had to utilize Generative AI to assist with the creation of it.
     - The AI was used to help generate the initial structure and logic for the Quadtree implementation, which I then refined and integrated into the overall simulation code.
 - I also utiized AI to help with implementing a restart function, as I kept banging my head against a wall trying to figure it out.
+    - Lifetimes were causing problems.
 
 ---
 
