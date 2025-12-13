@@ -8,7 +8,7 @@
 
 - **Small $\theta$ (e.g., < 0.2):** The simulation is **Slow but Accurate**. It refuses to group particles unless they are very far away, forcing the algorithm to calculate forces against specific individual particles more often.
 
-- **$\theta$ = 0:** This turns Barnes-Hut into a standard Brute Force ($O(N^2)$) algorithm, where every particle interacts with every other particle. Maximum accuracy, minimum speed.
+- **$\theta$ = 0:** This turns Barnes-Hut into a standard Brute Force $O(N^2)$ algorithm, where every particle interacts with every other particle. Maximum accuracy, minimum speed.
 
 #### The Math Behind It
 The Barnes-Hut algorithm makes a decision for every node in the QuadTree using this ratio:
